@@ -1,0 +1,6 @@
+language: cpp
+install: 
+  - ./compile-libraries.sh
+script: 
+  - cd v4l2rtspserver-master
+  - ./compile.sh NULL

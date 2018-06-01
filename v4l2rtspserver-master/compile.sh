@@ -18,6 +18,10 @@ rm -r CMakeFiles
 cmake -DCMAKE_TOOLCHAIN_FILE="./dafang.toolchain"  -DCMAKE_INSTALL_PREFIX=./_install
 make VERBOSE=1 -j4 install
 
+if [ $HOST == "NULL" ]; then
+  exit 0;
+fi
+
 echo Copying to ${HOST} v4l2rtspserver 
 ftp-upload -h ${HOST} -u root --password ismart12 -d /system/sdcard/bin/ _install/bin/*
 for i in _install/libs/*

@@ -12,6 +12,7 @@ v4l2rtspserver-master
 _install/
 rootfs
 *.a
+*.o
 # cpack
 _CPack_Packages
 install_manifest.txt
