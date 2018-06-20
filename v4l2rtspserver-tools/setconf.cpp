@@ -76,9 +76,25 @@ void usage(char *command)
 
 }
 
+void validate_video_setting_or_exit(char *name, char *value) {
+    if (strcmp(name, "video-max-qp") == 0 || strcmp(name, "video-min-qp") == 0) {
+        if (atoi(value) < 1 || atoi(value) > 51) {
+            printf("%s must be between 1 and 51\n", name);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (strcmp(name, "video-quality-level") == 0) {
+        if (atoi(value) < 0 || atoi(value) > 7) {
+            printf("%s must be between 0 and 7 (0 = best)\n", name);
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
 
-    char key = 0;
+    char *key = NULL;
     char *value = NULL;
     bool get = false;
 
@@ -91,11 +107,11 @@ int main(int argc, char *argv[]) {
                     // no break on purpose, execute 'k' case
             case 'k':
                 if (key == 0) {
-                    key = optarg[0];
+                    key = optarg;
                 } else {
-                       printf("Can not use g and k values at the same time\n", c);
-                       usage(argv[0]);
-                       exit(EXIT_FAILURE);
+                    printf("Can not use g and k values at the same time\n");
+                    usage(argv[0]);
+                    exit(EXIT_FAILURE);
                 }
                 break;
 
@@ -103,9 +119,8 @@ int main(int argc, char *argv[]) {
                 value = optarg;
                 break;
 
-
             default:
-                printf("Invalid Argument %c\n", c);
+                printf("Invalid option %c\n", c);
                 usage(argv[0]);
                 exit(EXIT_FAILURE);
         }
@@ -115,79 +130,62 @@ int main(int argc, char *argv[]) {
     //printf("%d,%d\n", conf->nightmode, conf->flip);
     mem.readConfig();
     //printf("%d,%d\n", conf->nightmode, conf->flip);
-    switch (key) {
-        case 'f':
-            SETGETSHAREDMEMORYINT(conf->flip );
-            break;
-        case 'n':
-            SETGETSHAREDMEMORYINT(conf->nightmode );
-            break;
-        case 'b':
-            SETGETSHAREDMEMORYINT(conf->bitrate );
-            break;
-
-        // OSD configuration
-        case 'o':
-            SETGETSHAREDMEMORYSTRING(conf->osdTimeDisplay );
-            break;
-        case 'c':
-            SETGETSHAREDMEMORYINT(conf->osdColor);
-            break;
-        case 's':
-            SETGETSHAREDMEMORYINT(conf->osdSize);
-            break;
-        case 'x':
-            SETGETSHAREDMEMORYINT(conf->osdPosY);
-            break;
-        case 'p':
-            SETGETSHAREDMEMORYINT(conf->osdSpace);
-            break;
-        case 'w':
-            SETGETSHAREDMEMORYBOOL(conf->osdFixedWidth);
-            break;
-        // Motion configuration
-        case 'm':
-            SETGETSHAREDMEMORYINT(conf->sensitivity);
-            break;
-        case 'z':
-           SETGETSHAREDMEMORYINT(conf->motionOSD);
-           break;
-        case 'r':
-            if (get)
-                printf("%d,%d,%d,%d\n", conf->detectionRegion[0], conf->detectionRegion[1],conf->detectionRegion[2],conf->detectionRegion[3]);
-            else
-                stringToInts(value, conf->detectionRegion);
-            break;
-        case 't':
-            SETGETSHAREDMEMORYBOOL(conf->motionTracking);
-            break;
-        case 'u':
-            SETGETSHAREDMEMORYINT(conf->motionTimeout);
-            break;
-        case 'h':
-            SETGETSHAREDMEMORYINT(conf->hardVolume);
-            break;
-        case 'i':
-            SETGETSHAREDMEMORYINT(conf->softVolume);
-            break;
-        case 'q':
-            SETGETSHAREDMEMORYINT(conf->filter);
-            break;
-        case 'l':
-            SETGETSHAREDMEMORYBOOL(conf->highfilter);
-            break;
-
-    default:
-        printf("Invalid Argument %c\n", key);
+    if (strcmp(key, "f") == 0) {
+        SETGETSHAREDMEMORYINT(conf->flip );
+    } else if (strcmp(key, "n") == 0) {
+        SETGETSHAREDMEMORYINT(conf->nightmode);
+    } else if (strcmp(key, "b") == 0) {
+        SETGETSHAREDMEMORYINT(conf->bitrate);
+    } else if (strcmp(key, "o") == 0) {
+        SETGETSHAREDMEMORYSTRING(conf->osdTimeDisplay);
+    } else if (strcmp(key, "c") == 0) {
+        SETGETSHAREDMEMORYINT(conf->osdColor);
+    } else if (strcmp(key, "s") == 0) {
+        SETGETSHAREDMEMORYINT(conf->osdSize);
+    } else if (strcmp(key, "x") == 0) {
+        SETGETSHAREDMEMORYINT(conf->osdPosY);
+    } else if (strcmp(key, "p") == 0) {
+        SETGETSHAREDMEMORYINT(conf->osdSpace);
+    } else if (strcmp(key, "w") == 0) {
+        SETGETSHAREDMEMORYINT(conf->osdFixedWidth);
+    } else if (strcmp(key, "m") == 0) {
+        SETGETSHAREDMEMORYINT(conf->sensitivity);
+    } else if (strcmp(key, "z") == 0) {
+        SETGETSHAREDMEMORYINT(conf->motionOSD);
+    } else if (strcmp(key, "r") == 0) {
+        if (get) {
+            printf("%d,%d,%d,%d\n", conf->detectionRegion[0], conf->detectionRegion[1],conf->detectionRegion[2],conf->detectionRegion[3]);
+        } else {
+            stringToInts(value, conf->detectionRegion);
+        }
+    } else if (strcmp(key, "t") == 0) {
+        SETGETSHAREDMEMORYBOOL(conf->motionTracking);
+    } else if (strcmp(key, "u") == 0) {
+        SETGETSHAREDMEMORYINT(conf->motionTimeout);
+    } else if (strcmp(key, "h") == 0) {
+        SETGETSHAREDMEMORYINT(conf->hardVolume);
+    } else if (strcmp(key, "i") == 0) {
+        SETGETSHAREDMEMORYINT(conf->softVolume);
+    } else if (strcmp(key, "q") == 0) {
+        SETGETSHAREDMEMORYINT(conf->filter);
+    } else if (strcmp(key, "l") == 0) {
+        SETGETSHAREDMEMORYBOOL(conf->highfilter);
+    } else if (strcmp(key, "video-max-qp") == 0) {
+        validate_video_setting_or_exit(key, value);
+        SETGETSHAREDMEMORYINT(conf->maxQp);
+    } else if (strcmp(key, "video-min-qp") == 0) {
+        validate_video_setting_or_exit(key, value);
+        SETGETSHAREDMEMORYINT(conf->minQp);
+    } else if (strcmp(key, "video-quality-level") == 0) {
+        validate_video_setting_or_exit(key, value);
+        SETGETSHAREDMEMORYINT(conf->qualityLvl);
+    } else {
+        printf("Invalid Argument %s\n", key);
         usage(argv[0]);
         exit(EXIT_FAILURE);
     }
     mem.setConfig();
-    //mem.readConfig();
-    //printf("%d,%d\n", conf->nightmode, conf->flip);
 
     return 0;
-
-
 }
 

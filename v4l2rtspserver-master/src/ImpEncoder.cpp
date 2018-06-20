@@ -302,6 +302,10 @@ static void *update_thread(void *p) {
 
 
     struct shared_conf currentConfig = {0};
+    currentConfig.minQp = 15;
+    currentConfig.maxQp = 45;
+    currentConfig.qualityLvl = 2;
+    
     shared_conf *newConfig;
     SharedMem &sharedMem = SharedMem::instance();
     newConfig = sharedMem.getConfig();
@@ -409,10 +413,13 @@ static void *update_thread(void *p) {
             LOG_S(INFO) << "Changed NIGHTVISION";
             ImpEncoder::setNightVision(newConfig->nightmode);
         }
+
+        IMPEncoderAttrRcMode attr;
+        int ret = IMP_Encoder_GetChnAttrRcMode(0, &attr);
+
         if (currentConfig.bitrate != newConfig->bitrate) {
             LOG_S(INFO) << "Attempt to changed Bitrate to " << newConfig->bitrate;
-            IMPEncoderAttrRcMode attr;
-            int ret = IMP_Encoder_GetChnAttrRcMode(0, &attr);
+
             if (ret < 0) {
                 LOG_S(INFO) << "Unable to get param to change the bitrate";
             }
@@ -440,7 +447,63 @@ static void *update_thread(void *p) {
             if (ret < 0) {
                 LOG_S(INFO) << "Unable to change the bitrate";
             }
+        }
 
+        if (currentConfig.maxQp != (uint) newConfig->maxQp) {
+            LOG_S(INFO) << "Attempt to change maxQp from " << attr.attrH264Smart.maxQp << " to " << newConfig->maxQp;
+            switch (attr.rcMode) {
+                case ENC_RC_MODE_SMART:
+                    attr.attrH264Smart.maxQp = (uint)newConfig->maxQp;
+                    break;
+                case ENC_RC_MODE_VBR:
+                    attr.attrH264Vbr.maxQp = (uint)newConfig->maxQp;
+                    break;
+                default:
+                    LOG_S(INFO) << "maxQp not supported for mode " << attr.rcMode;
+                    break;
+            }
+            IMP_Encoder_SetChnAttrRcMode(0, &attr);
+            if (ret < 0) {
+                LOG_S(INFO) << "Unable to change the maxQp";
+            }
+        }
+
+        if (currentConfig.minQp != (uint) newConfig->minQp) {
+            LOG_S(INFO) << "Attempt to change minQp from " << attr.attrH264Smart.minQp << " to " << newConfig->minQp;
+            switch (attr.rcMode) {
+                case ENC_RC_MODE_SMART:
+                    attr.attrH264Smart.minQp = (uint)newConfig->minQp;
+                    break;
+                case ENC_RC_MODE_VBR:
+                    attr.attrH264Vbr.minQp = (uint)newConfig->minQp;
+                    break;
+                default:
+                    LOG_S(INFO) << "minQp not supported for mode " << attr.rcMode;
+                    break;
+            }
+            IMP_Encoder_SetChnAttrRcMode(0, &attr);
+            if (ret < 0) {
+                LOG_S(INFO) << "Unable to change the minQp";
+            }
+        }
+
+        if (currentConfig.qualityLvl != (uint)newConfig->qualityLvl) {
+            LOG_S(INFO) << "Attempt to change qualityLvl from " << attr.attrH264Smart.qualityLvl << " to " << newConfig->qualityLvl;
+            switch (attr.rcMode) {
+                case ENC_RC_MODE_SMART:
+                    attr.attrH264Smart.qualityLvl = (uint)newConfig->qualityLvl;
+                    break;
+                case ENC_RC_MODE_VBR:
+                    attr.attrH264Vbr.qualityLvl = (uint)newConfig->qualityLvl;
+                    break;
+                default:
+                    LOG_S(INFO) << "qualityLvl not supported for mode " << attr.rcMode;
+                    break;
+            }
+            IMP_Encoder_SetChnAttrRcMode(0, &attr);
+            if (ret < 0) {
+                LOG_S(INFO) << "Unable to change the qualityLvl";
+            }
         }
 
         if (strcmp(currentConfig.osdTimeDisplay, newConfig->osdTimeDisplay) != 0) {
@@ -1443,8 +1506,8 @@ int ImpEncoder::sample_encoder_init() {
             mem.setConfig();
         }
 
-        rc_attr->attrRcMode.attrH264Cbr.maxQp = 45;
-        rc_attr->attrRcMode.attrH264Cbr.minQp = 15;
+        rc_attr->attrRcMode.attrH264Cbr.maxQp = conf->maxQp ? conf->maxQp : 45;
+        rc_attr->attrRcMode.attrH264Cbr.minQp = conf->minQp ? conf->minQp : 15;
         rc_attr->attrRcMode.attrH264Cbr.iBiasLvl = 0;
         rc_attr->attrRcMode.attrH264Cbr.frmQPStep = 3;
         rc_attr->attrRcMode.attrH264Cbr.gopQPStep = 15;
@@ -1476,12 +1539,12 @@ int ImpEncoder::sample_encoder_init() {
         }
 
 
-        rc_attr->attrRcMode.attrH264Vbr.maxQp = 45;
-        rc_attr->attrRcMode.attrH264Vbr.minQp = 15;
+        rc_attr->attrRcMode.attrH264Vbr.maxQp = conf->maxQp ? conf->maxQp : 45;
+        rc_attr->attrRcMode.attrH264Vbr.minQp = conf->minQp ? conf->minQp : 15;
         rc_attr->attrRcMode.attrH264Vbr.staticTime = 2;
         rc_attr->attrRcMode.attrH264Vbr.iBiasLvl = 0;
         rc_attr->attrRcMode.attrH264Vbr.changePos = 80;
-        rc_attr->attrRcMode.attrH264Vbr.qualityLvl = 2;
+        rc_attr->attrRcMode.attrH264Vbr.qualityLvl = conf->qualityLvl ? conf->qualityLvl : 2;
         rc_attr->attrRcMode.attrH264Vbr.frmQPStep = 3;
         rc_attr->attrRcMode.attrH264Vbr.gopQPStep = 15;
         rc_attr->attrRcMode.attrH264Vbr.gopRelation = false;
@@ -1510,12 +1573,12 @@ int ImpEncoder::sample_encoder_init() {
 
 
         rc_attr->attrRcMode.rcMode = ENC_RC_MODE_SMART;
-        rc_attr->attrRcMode.attrH264Smart.maxQp = 45;
-        rc_attr->attrRcMode.attrH264Smart.minQp = 15;
+        rc_attr->attrRcMode.attrH264Smart.maxQp = conf->maxQp > 0 ? conf->maxQp : 45;
+        rc_attr->attrRcMode.attrH264Smart.minQp = conf->minQp > 0 ? conf->minQp : 15;
         rc_attr->attrRcMode.attrH264Smart.staticTime = 2;
         rc_attr->attrRcMode.attrH264Smart.iBiasLvl = 0;
         rc_attr->attrRcMode.attrH264Smart.changePos = 80;
-        rc_attr->attrRcMode.attrH264Smart.qualityLvl = 2;
+        rc_attr->attrRcMode.attrH264Smart.qualityLvl = conf->qualityLvl > 0 ? conf->qualityLvl : 2;
         rc_attr->attrRcMode.attrH264Smart.frmQPStep = 3;
         rc_attr->attrRcMode.attrH264Smart.gopQPStep = 15;
         rc_attr->attrRcMode.attrH264Smart.gopRelation = false;

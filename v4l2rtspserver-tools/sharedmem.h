@@ -26,6 +26,9 @@ struct shared_conf {
     int softVolume;
     char filter;
     bool highfilter;
+    uint minQp;
+    uint maxQp;
+    uint qualityLvl;
 };
 
 

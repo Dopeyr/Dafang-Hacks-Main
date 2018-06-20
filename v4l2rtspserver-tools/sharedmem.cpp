@@ -20,6 +20,9 @@ SharedMem::SharedMem() {
     currentConfig.hardVolume = -1;
     currentConfig.filter = 0;
     currentConfig.highfilter = 0;
+    currentConfig.maxQp = 45;
+    currentConfig.minQp = 15;
+    currentConfig.qualityLvl = 2;
 
     key_image_mem = ftok("/usr/", '1');
     key_image_semaphore = ftok("/usr/", '2');
